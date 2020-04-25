@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 typedef struct Arguments {
     unsigned int nsecs;
@@ -97,6 +98,32 @@ int main(int argc, char *argv[], char *envp[]){
     }
     else{
         printf("Can't open FIFO\n");
+        if(unlink(args.fifoname) < 0)
+            printf("Error can't destroy FIFO!\n");
+        else
+            printf("FIFO has been destroyed!\n");
+        
     }
+    
+    //long int timeout = args.nsecs * 1000000;
+    long int time = 0;
+    char msg[256];
+    pthread t;
+
+    while(time < args.nsecs){
+        
+        while (read(fd, &msg, 256) > 0 && msg[0] == '[' && time < args.nsecs)
+        {
+            printf(msg);
+            time += 1;
+            //pthread_create(&t, NULL, thr_func, (void *) arg);
+            //pthread_join(t, NULL);
+        }
+        
+        
+    }
+
+
+    
     return 0;
 }
