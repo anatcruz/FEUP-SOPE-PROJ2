@@ -74,15 +74,15 @@ void print_args(Args args){
 
 
 int main(int argc, char *argv[], char *envp[]){
-    Args args;
+    /*Args args;
     init_args(&args);
     if(get_args(&args, argc, argv)==-1){
         perror("Error getting args!");
         exit(1);
-    }
+    }*/
     //print_args(args);
 
-    if (mkfifo(args.fifoname, 0660) != 0){ //Makes fifo
+    if (mkfifo("fifoname", 0660) != 0){ //Makes fifo
         printf("Error, can't create FIFO!\n");
         exit(1);
     }
@@ -91,39 +91,37 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     int fd;
-    char str[100];
-    if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) != -1){
-        printf("FIFO is opened!\n");
-        close(fd);
+    if((fd=open("fifoname", O_RDONLY)) != -1){
+        printf("FIFO is open read\n");
     }
     else{
         printf("Can't open FIFO\n");
-        if(unlink(args.fifoname) < 0)
+        if(unlink("fifoname") < 0)
             printf("Error can't destroy FIFO!\n");
         else
             printf("FIFO has been destroyed!\n");
         
     }
     
-    //long int timeout = args.nsecs * 1000000;
     long int time = 0;
     char msg[256];
-    pthread t;
+    pthread_t t;
 
-    while(time < args.nsecs){
-        
-        while (read(fd, &msg, 256) > 0 && msg[0] == '[' && time < args.nsecs)
-        {
-            printf(msg);
-            time += 1;
-            //pthread_create(&t, NULL, thr_func, (void *) arg);
-            //pthread_join(t, NULL);
-        }
-        
-        
-    }
+    sleep(2);
+    if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf(msg);
 
+    // while(time < /*args.nsecs*/ 5){
+        
+    //     while (read(fd, &msg, 256) > 0 && msg[0] == '[' && time < /*args.nsecs*/ 5)
+    //     {
+    //         printf(msg);
+    //         time += 1;
+    //         //pthread_create(&t, NULL, thr_func, (void *) arg);
+    //         //pthread_join(t, NULL);
+    //     }    
+    // }
 
-    
-    return 0;
+    close(fd);
+
+    pthread_exit(0);
 }
