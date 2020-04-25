@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 typedef struct Arguments {
     unsigned int nsecs;
@@ -74,6 +77,34 @@ int main(int argc, char *argv[], char *envp[]){
         perror("Error getting args!");
         exit(1);
     }
-    print_args(args);
+    //print_args(args);
+
+    if (mkfifo(args.fifoname, 0660) != 0){ //Makes fifo
+        printf("Error, can't create FIFO!\n");
+        exit(1);
+    }
+    else{
+        printf("FIFO was created!\n");
+    }
+
+    int fd;
+    char str[100];
+    if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) != -1){
+        printf("FIFO is opened!\n");
+        while(readLine(fd, str)) printf("%s", str);
+        close(fd);
+    }
+    else{
+        printf("Can't open FIFO\n");
+    }
     return 0;
+}
+
+int readLine(int  fd, char *str){
+    int n;
+    do{
+        n -0 read(fd, str, 1);
+    }while(n > 0 && *str++ != '\0');
+
+    return (n > 0);
 }
