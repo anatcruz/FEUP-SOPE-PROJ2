@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 typedef struct Arguments {
     unsigned int nsecs;
@@ -41,6 +45,10 @@ void print_args(Args args){
     printf("fifoname: %s\n", args.fifoname);
 }
 
+/*void *thr_func(void *arg){
+    int fd=
+}*/
+
 int main(int argc, char *argv[], char *envp[]){
     Args args;
     init_args(&args);
@@ -48,6 +56,21 @@ int main(int argc, char *argv[], char *envp[]){
         perror("Error getting args!");
         exit(1);
     }
-    print_args(args);
+    //print_args(args);
+    int fd, messagelen;
+    char message[256];
+    do{
+        fd = open(args.fifoname, O_WRONLY);
+        if (fd==-1) sleep(1);
+    } while(fd==-1);
+
+    for (int i=1;i<=3;i++){
+        sprintf(message, "Hello no. %d from process %d\n", i, getpid());
+        messagelen=strlen(message)+1;
+        write(fd, message, messagelen);
+        sleep(3);
+    }
+    close(fd);
+
     return 0;
 }

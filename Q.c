@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -70,6 +71,7 @@ void print_args(Args args){
     printf("fifoname: %s\n", args.fifoname);
 }
 
+
 int main(int argc, char *argv[], char *envp[]){
     Args args;
     init_args(&args);
@@ -91,20 +93,10 @@ int main(int argc, char *argv[], char *envp[]){
     char str[100];
     if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) != -1){
         printf("FIFO is opened!\n");
-        while(readLine(fd, str)) printf("%s", str);
         close(fd);
     }
     else{
         printf("Can't open FIFO\n");
     }
     return 0;
-}
-
-int readLine(int  fd, char *str){
-    int n;
-    do{
-        n -0 read(fd, str, 1);
-    }while(n > 0 && *str++ != '\0');
-
-    return (n > 0);
 }
