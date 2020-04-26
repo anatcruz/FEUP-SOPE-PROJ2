@@ -9,23 +9,27 @@
 #include "args.h"
 #include "utils.h"
 
-int pl = 1;
+int pl = 0;
 server_args args;
 
 void *thr_func(void *arg){
-    char client_fifo[64];
-    sprintf(client_fifo, "/tmp/%d.%d", getpid(), (long int)pthread_self());
-    char message[256] = (char *) arg;
+    char private_fifo[256];
     int i,duration, pid;
     long tid;
-    sscanf(message,"[ %d, %d, %ld, %d, -1]",&i,&pid,&tid,&duration);
+
+    sscanf((char *) arg,"[ %d, %d, %ld, %d, -1]",&i,&pid,&tid,&duration);
     logRegister(i, pid, tid, duration, -1, "RECVD"); //request received
 
-    int fd;
-    while(fd = open(client_fifo, O_WRONLY) < 0){
-        logRegister(i, pid, tid, duration, -1, "GAVUP");
-        printf("Failed to open FIFO!\n"); //private client fifo is already closed
-        sleep(1);
+    sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
+
+    int fd_private;
+    // if((fd_private = open(private_fifo, O_WRONLY)) != -1){
+    //     printf("Private FIFO is open write\n");
+    // }
+    while(fd_private = open(private_fifo, O_WRONLY) < 0){
+        // logRegister(i, pid, tid, duration, -1, "GAVUP");
+        // printf("Failed to open FIFO!\n"); //private client fifo is already closed
+        usleep(1000);
     }
 
     char client_reply[256];
@@ -37,10 +41,12 @@ void *thr_func(void *arg){
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d]",i,getpid(), (long int)pthread_self(),-1,-1);
         logRegister(i, getpid(), (long int)pthread_self, duration, pl-1, "2LATE");
     }
+    
+    write(fd_private, &client_reply, 256);
 
-    sleep(duration);
+    usleep(duration*1000);
     logRegister(1, getpid(), (long int)pthread_self, duration, pl-1, "TIMUP");
-    close(fd);
+    close(fd_private);
     return NULL;
 }
 
@@ -59,8 +65,8 @@ int main(int argc, char *argv[], char *envp[]){
         printf("FIFO was created!\n");
     }
 
-    int fd;
-    if((fd=open(args.fifoname, O_RDONLY)) != -1){
+    int fd_private;
+    if((fd_private=open(args.fifoname, O_RDONLY)) != -1){
         printf("FIFO is open read\n");
     }
     else{
@@ -77,13 +83,13 @@ int main(int argc, char *argv[], char *envp[]){
     pthread_t t;
 
     sleep(2);
-    if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf(msg);
+    if (read(fd_private, &msg, 256) > 0 && msg[0] == '[') printf("%s\n",msg);
     pthread_create(&t, NULL, thr_func, (void *) msg);
     pthread_join(t, NULL);
 
     // while(time < /*args.nsecs*/ 5){
         
-    //     while (read(fd, &msg, 256) > 0 && msg[0] == '[' && time < /*args.nsecs*/ 5)
+    //     while (read(fd_private, &msg, 256) > 0 && msg[0] == '[' && time < /*args.nsecs*/ 5)
     //     {
     //         printf(msg);
     //         time += 1;
@@ -92,7 +98,14 @@ int main(int argc, char *argv[], char *envp[]){
     //     }    
     // }
 
-    close(fd);
+    close(fd_private);
+
+
+    if(unlink(args.fifoname) < 0)
+       printf("Error can't destroy FIFO!\n");
+    else
+        printf("FIFO has been destroyed!\n");
+
 
     pthread_exit(0);
 }
