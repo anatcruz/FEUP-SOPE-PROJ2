@@ -14,3 +14,8 @@ double getElapsedTime(){
 
     return elapsedTime;
 }
+
+void logRegister(int i, int pid, long tid, int dur, int pl, char *oper) {
+    fprintf(stdout, "%f ; %d ; %d ; %ld ; %d ; %d ; %s\n", getElapsedTime(), i, pid, tid, dur, pl, oper);
+    fflush(stdout);
+}
