@@ -15,27 +15,32 @@
 int i;
 
 void *thr_func(void *arg){
+    int client_pid = getpid();
+    long int client_tid = pthread_self();
+
     //Send request to WC    
+    char message[256];
+
     int fd = open((char *)arg, O_WRONLY);
-    
-    if (fd==-1){
+    if (fd==-1){ 
         printf("WC closed!\n");
         return NULL;
     }
     printf("FIFO is open write\n");
 
-    char message[256];
-    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, getpid(), (long int)pthread_self(), 50, -1);
-
+    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, client_pid, client_tid, 50, -1);
     write(fd, &message, 256);
     close(fd);
 
+
     //Reading WC response
     char private_fifo[256];
-    sprintf(private_fifo, "/tmp/%d.%ld", getpid(), (long int)pthread_self());
-    printf("Client pfifo %s\n", private_fifo);
+    int id, pid, pl, dur, fd_private;
+    long tid;
 
-    if (mkfifo(private_fifo, 0660) != 0){ //Makes fifo
+    sprintf(private_fifo, "/tmp/%d.%ld", client_pid, client_tid);
+    printf("Client pfifo %s\n", private_fifo);
+    if (mkfifo(private_fifo, 0660) != 0){   //Makes private FIFO
         printf("Error, can't create private FIFO!\n");
         exit(1);
     }
@@ -43,8 +48,7 @@ void *thr_func(void *arg){
         printf("Private FIFO was created!\n");
     }
 
-    int fd_private;
-    if((fd_private=open(private_fifo, O_RDONLY)) != -1){
+    if((fd_private=open(private_fifo, O_RDONLY)) != -1){    //Opens private FIFO for reading
         printf("Private FIFO is open read %d\n", fd_private);
     }
     else{
@@ -56,23 +60,18 @@ void *thr_func(void *arg){
         exit(1);
     }
 
-    if (read(fd_private, &message, 256)>0) printf(message);
+    if (read(fd_private, &message, 256)>0) printf(message);    //Reads message from private FIFO
+    sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);   
 
-    int id, pid, pl, dur;
-    long tid;
-
-    sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);
-
-    if (pl == -1 && dur == -1){
+    if (pl == -1 && dur == -1){    //WC is closing
         logRegister(id, pid, tid, dur, pl, "CLOSD");
     }
-    else{
+    else{    //WC is open
         logRegister(id, pid, tid, dur, pl, "IAMIN");
     }
 
-    close(fd_private);
-
-    if(unlink(private_fifo) < 0)
+    close(fd_private);    //Closes private FIFO
+    if(unlink(private_fifo) < 0)    //Destroys private FIFO
        printf("Error can't destroy Private FIFO!\n");
     else
         printf("Private FIFO has been destroyed!\n");
@@ -80,8 +79,10 @@ void *thr_func(void *arg){
     return NULL;
 }
 
+
 int main(int argc, char *argv[], char *envp[]){
     client_args args;
+
     if(get_client_args(&args, argc, argv)==-1){
         perror("Error getting args!");
         exit(1);
