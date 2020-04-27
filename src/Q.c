@@ -80,24 +80,23 @@ int main(int argc, char *argv[], char *envp[]){
         
     }
     
-    long int time = 0;
+
     char msg[256];
     pthread_t t;
 
-    if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf(msg);
-    pthread_create(&t, NULL, thr_func, (void *) msg);
-    pthread_join(t, NULL);
+    // if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf(msg);
+    // pthread_create(&t, NULL, thr_func, (void *) msg);
+    // pthread_join(t, NULL);
 
-    // while(time < /*args.nsecs*/ 5){
+    while(getElapsedTime() < args.nsecs){
         
-    //     while (read(fd_private, &msg, 256) > 0 && msg[0] == '[' && time < /*args.nsecs*/ 5)
-    //     {
-    //         printf(msg);
-    //         time += 1;
-    //         //pthread_create(&t, NULL, thr_func, (void *) arg);
-    //         //pthread_join(t, NULL);
-    //     }    
-    // }
+       if (read(fd, &msg, 256) > 0 && msg[0] == '['){
+            pthread_create(&t, NULL, thr_func, (void *) msg);
+            printf(msg);
+            pthread_join(t, NULL);
+       }
+     
+    }
 
     close(fd);
 
