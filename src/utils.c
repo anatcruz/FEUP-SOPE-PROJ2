@@ -1,18 +1,15 @@
 #include "utils.h"
 
-struct timeval initTime, currentTime;
+struct timespec start;
 
 void getBeginTime(){
-    gettimeofday(&initTime, NULL);
+    clock_gettime(CLOCK_MONOTONIC, &start);
 }
 
 double getElapsedTime(){
-    gettimeofday(&currentTime, NULL);
-
-    double elapsedTime = (currentTime.tv_sec - initTime.tv_sec) * 1000.0;      // sec to ms
-    elapsedTime += (currentTime.tv_usec - initTime.tv_usec) / 1000.0;   // us to ms
-
-    return elapsedTime;
+    struct timespec current;
+    clock_gettime(CLOCK_MONOTONIC, &current);
+    return ((current.tv_sec - start.tv_sec)*1000 + (current.tv_nsec - start.tv_nsec)/1e6);
 }
 
 void logRegister(int i, int pid, long tid, int dur, int pl, char *oper) {

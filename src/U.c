@@ -23,7 +23,7 @@ void *thr_func(void *arg){
     printf("FIFO is open write\n");
 
     char message[256];
-    sprintf(message, "[ %d, %d, %ld, %d, %d]", i, getpid(), (long int)pthread_self(), 2, -1);
+    sprintf(message, "[ %d, %d, %ld, %d, %d ]", i, getpid(), (long int)pthread_self(), 2, -1);
 
     write(fd, &message, 256);
     close(fd);
@@ -31,6 +31,7 @@ void *thr_func(void *arg){
     //Reading WC response
     char private_fifo[256];
     sprintf(private_fifo, "/tmp/%d.%ld", getpid(), (long int)pthread_self());
+    printf("Client pfifo %s\n", private_fifo);
 
     if (mkfifo(private_fifo, 0660) != 0){ //Makes fifo
         printf("Error, can't create private FIFO!\n");
@@ -42,7 +43,7 @@ void *thr_func(void *arg){
 
     int fd_private;
     if((fd_private=open(private_fifo, O_RDONLY)) != -1){
-        printf("Private FIFO is open read\n");
+        printf("Private FIFO is open read %d\n", fd_private);
     }
     else{
         printf("Can't open FIFO\n");
@@ -53,15 +54,16 @@ void *thr_func(void *arg){
         exit(1);
     }
 
-    sleep(2);
+    sleep(3);
     if (read(fd_private, &message, 256)>0) printf("%s\n", message);
 
     int id, pid, pl, dur;
     long tid;
 
-    sscanf(message, "[ %d, %d, %ld, %d, %d]", &id, &pid, &tid, &dur, &pl);
+    sscanf(message, "[ %d, %d, %ld, %d, %d ]", &id, &pid, &tid, &dur, &pl);
+
     if (pl == -1 && dur == -1){
-        logRegister(id, pid, tid, dur, pl, "CLOSE");
+        logRegister(id, pid, tid, dur, pl, "CLOSD");
     }
     else{
         logRegister(id, pid, tid, dur, pl, "IAMIN");
