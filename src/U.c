@@ -12,23 +12,26 @@
 
 #define MAX_THREADS 100
 
-int i;
+int i=0 ;
 
 void *thr_func(void *arg){
     int client_pid = getpid();
     long int client_tid = pthread_self();
+    int duration = (rand() % (100 - 20 + 1)) + 20; //random duration in WC in ms
 
-    //Send request to WC    
-    char message[256];
+    logRegister(i, client_pid, client_tid, duration, -1, "IWANT");
 
     int fd = open((char *)arg, O_WRONLY);
     if (fd==-1){ 
-        printf("WC closed!\n");
+        logRegister(i, client_pid, client_tid, duration, -1, "CLOSD");
         return NULL;
     }
     printf("FIFO is open write\n");
 
-    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, client_pid, client_tid, 50, -1);
+    //Send request to WC    
+    char message[256];
+
+    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, client_pid, client_tid, duration, -1);
     write(fd, &message, 256);
     close(fd);
 
@@ -53,6 +56,7 @@ void *thr_func(void *arg){
     }
     else{
         printf("Can't open FIFO\n");
+        logRegister(i, client_pid, client_tid, duration, -1, "FAILD");
         if(unlink(private_fifo) < 0)
             printf("Error can't destroy private FIFO!\n");
         else
