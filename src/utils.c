@@ -11,8 +11,8 @@ double getElapsedTime(){
     clock_gettime(CLOCK_MONOTONIC, &current);
     return ((current.tv_sec - start.tv_sec)*1000 + (current.tv_nsec - start.tv_nsec)/1e6);
 }
-
+    
 void logRegister(int i, int pid, long tid, int dur, int pl, char *oper) {
-    fprintf(stdout, "%f ; %d ; %d ; %ld ; %d ; %d ; %s\n", getElapsedTime(), i, pid, tid, dur, pl, oper);
+    printf("%f ; %d ; %d ; %ld ; %d ; %d ; %s\n", getElapsedTime(), i, pid, tid, dur, pl, oper);
     fflush(stdout);
 }

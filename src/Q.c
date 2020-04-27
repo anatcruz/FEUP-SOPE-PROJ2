@@ -17,7 +17,7 @@ void *thr_func(void *arg){
     int i,dur, pid;
     long tid;
 
-    sscanf((char *) arg,"[ %d, %d, %ld, %d, -1 ]",&i,&pid,&tid,&dur);
+    sscanf((char *) arg,"[ %d, %d, %ld, %d, -1 ]\n",&i,&pid,&tid,&dur);
     logRegister(i, pid, tid, dur, -1, "RECVD"); //request received
 
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
@@ -34,13 +34,12 @@ void *thr_func(void *arg){
     // }
 
     char client_reply[256];
-    printf("%d\n", getElapsedTime()*1e-3);
     if(getElapsedTime()*1e-3 + dur*1e-3 < args.nsecs){ //request accepted
-        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]",i, getpid(), (long int)pthread_self(), dur, ++pl);
+        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, getpid(), (long int)pthread_self(), dur, ++pl);
         logRegister(i, getpid(), (long int)pthread_self(), dur, pl, "ENTER");
     }
     else{ //bathroom closed
-        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]",i, getpid(), (long int)pthread_self(), -1, -1);
+        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, getpid(), (long int)pthread_self(), -1, -1);
         logRegister(i, getpid(), (long int)pthread_self, dur, -1, "2LATE");
     }
     
@@ -85,8 +84,7 @@ int main(int argc, char *argv[], char *envp[]){
     char msg[256];
     pthread_t t;
 
-    sleep(2);
-    if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf("%s\n",msg);
+    if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf(msg);
     pthread_create(&t, NULL, thr_func, (void *) msg);
     pthread_join(t, NULL);
 

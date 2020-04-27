@@ -23,7 +23,7 @@ void *thr_func(void *arg){
     printf("FIFO is open write\n");
 
     char message[256];
-    sprintf(message, "[ %d, %d, %ld, %d, %d ]", i, getpid(), (long int)pthread_self(), 2, -1);
+    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, getpid(), (long int)pthread_self(), 2, -1);
 
     write(fd, &message, 256);
     close(fd);
@@ -54,13 +54,12 @@ void *thr_func(void *arg){
         exit(1);
     }
 
-    sleep(3);
-    if (read(fd_private, &message, 256)>0) printf("%s\n", message);
+    if (read(fd_private, &message, 256)>0) printf(message);
 
     int id, pid, pl, dur;
     long tid;
 
-    sscanf(message, "[ %d, %d, %ld, %d, %d ]", &id, &pid, &tid, &dur, &pl);
+    sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);
 
     if (pl == -1 && dur == -1){
         logRegister(id, pid, tid, dur, pl, "CLOSD");
