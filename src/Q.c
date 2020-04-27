@@ -14,7 +14,7 @@ server_args args;
 
 void *thr_func(void *arg){
     char private_fifo[256];
-    int i,dur, pid;
+    int i, dur, pid;
     long tid;
 
     sscanf((char *) arg,"[ %d, %d, %ld, %d, -1 ]\n",&i,&pid,&tid,&dur);
@@ -23,29 +23,31 @@ void *thr_func(void *arg){
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
     printf("Server pfifo %s\n", private_fifo);
 
+    int server_pid = getpid();
+    long int server_tid = pthread_self();
+
     int fd_private;
     if((fd_private = open(private_fifo, O_WRONLY)) != -1){
         printf("Private FIFO is open write %d \n", fd_private);
     }
-    // while(fd_private = open(private_fifo, O_WRONLY) < 0){
-    //     // logRegister(i, pid, tid, dur, -1, "GAVUP");
-    //     // printf("Failed to open FIFO!\n"); //private client fifo is already closed
-    //     usleep(1000);
-    // }
+    else{
+        logRegister(i, getpid(), tid, dur, -1, "GAVUP");
+    }
 
     char client_reply[256];
     if(getElapsedTime()*1e-3 + dur*1e-3 < args.nsecs){ //request accepted
-        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, getpid(), (long int)pthread_self(), dur, ++pl);
-        logRegister(i, getpid(), (long int)pthread_self(), dur, pl, "ENTER");
+        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, ++pl);
+        logRegister(i, server_pid, server_tid, dur, pl, "ENTER");
     }
     else{ //bathroom closed
-        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, getpid(), (long int)pthread_self(), -1, -1);
-        logRegister(i, getpid(), (long int)pthread_self, dur, -1, "2LATE");
+        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
+        logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
     }
     
     write(fd_private, &client_reply, 256);
 
-    logRegister(1, getpid(), (long int)pthread_self, dur, pl-1, "TIMUP");
+    usleep(dur*1000);
+    logRegister(1, server_pid, server_tid, dur, pl-1, "TIMUP");
     close(fd_private);
     return NULL;
 }
@@ -84,11 +86,7 @@ int main(int argc, char *argv[], char *envp[]){
     char msg[256];
     pthread_t t;
 
-    // if (read(fd, &msg, 256) > 0 && msg[0] == '[') printf(msg);
-    // pthread_create(&t, NULL, thr_func, (void *) msg);
-    // pthread_join(t, NULL);
-
-    while(getElapsedTime() < args.nsecs){
+    while(getElapsedTime()*1e-3 < args.nsecs){
         
        if (read(fd, &msg, 256) > 0 && msg[0] == '['){
             pthread_create(&t, NULL, thr_func, (void *) msg);

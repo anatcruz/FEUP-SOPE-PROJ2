@@ -10,6 +10,8 @@
 #include "args.h"
 #include "utils.h"
 
+#define MAX_THREADS 100
+
 int i;
 
 void *thr_func(void *arg){
@@ -23,7 +25,7 @@ void *thr_func(void *arg){
     printf("FIFO is open write\n");
 
     char message[256];
-    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, getpid(), (long int)pthread_self(), 2, -1);
+    sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", i, getpid(), (long int)pthread_self(), 50, -1);
 
     write(fd, &message, 256);
     close(fd);
@@ -85,10 +87,16 @@ int main(int argc, char *argv[], char *envp[]){
         exit(1);
     }
 
-    pthread_t tid;
+    getBeginTime();
 
-    pthread_create(&tid, NULL, thr_func, args.fifoname);
-    pthread_join(tid, NULL);
+    pthread_t threads[MAX_THREADS];
+    int id = 0;
+
+    while(getElapsedTime()*1e-3<args.nsecs){
+        pthread_create(&threads[id], NULL, thr_func, args.fifoname);
+        pthread_join(threads[id], NULL);
+        sleep(1);
+    }
 
     pthread_exit(0);
 }
