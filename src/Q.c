@@ -30,6 +30,7 @@ void *thr_func(void *arg){
     }
     else{
         logRegister(i, getpid(), tid, dur, -1, "GAVUP");
+        return NULL;
     }
 
     //Replying to client
@@ -68,7 +69,7 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     int fd;
-    if((fd=open(args.fifoname, O_RDONLY)) != -1){   //Opens FIFO for reading
+    if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) != -1){   //Opens FIFO for reading
         printf("FIFO is open read\n");
     }
     else{
@@ -77,7 +78,7 @@ int main(int argc, char *argv[], char *envp[]){
             printf("Error can't destroy FIFO!\n");
         else
             printf("FIFO has been destroyed!\n");
-        
+        exit(1);
     }
     
     //Getting client requests
