@@ -13,6 +13,6 @@ double getElapsedTime(){
 }
     
 void logRegister(int i, int pid, long tid, int dur, int pl, char *oper) {
-    printf("%f ; %d ; %d ; %ld ; %d ; %d ; %s\n", getElapsedTime(), i, pid, tid, dur, pl, oper);
+    printf("%ld ; %d ; %d ; %ld ; %d ; %d ; %s\n", time(NULL), i, pid, tid, dur, pl, oper);
     fflush(stdout);
 }
