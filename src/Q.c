@@ -20,7 +20,7 @@ void *thr_func(void *arg){
     long int tid, server_tid = pthread_self();
 
     sscanf((char *) arg,"[ %d, %d, %ld, %d, -1 ]\n",&i,&pid,&tid,&dur);
-    logRegister(i, pid, tid, dur, -1, "RECVD");    //Request received
+    logRegister(i, server_pid, server_tid, dur, -1, "RECVD");    //Request received
 
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
     printf("Server pfifo %s\n", private_fifo);    
@@ -30,7 +30,7 @@ void *thr_func(void *arg){
         printf("Private FIFO is open write %d \n", fd_private);
     }
     else{
-        logRegister(i, getpid(), tid, dur, -1, "GAVUP");
+        logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
         return NULL;
     }
 
@@ -46,6 +46,7 @@ void *thr_func(void *arg){
     else{    //WC is closing
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
         logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
+        return NULL;
     }
     write(fd_private, &client_reply, MAX_LEN);
 

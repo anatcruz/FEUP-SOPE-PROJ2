@@ -16,7 +16,7 @@ pthread_mutex_t client_mut=PTHREAD_MUTEX_INITIALIZER;
 void *thr_func(void *arg){
     int client_pid = getpid();
     long int client_tid = pthread_self();
-    int duration = (rand() % (100 - 20 + 1)) + 20; //random duration in WC in ms
+    int duration = (rand() % (1000 - 200 + 1)) + 200; //random duration in WC in ms
 
     //Incrementing request nr
     pthread_mutex_lock(&client_mut);
@@ -26,7 +26,8 @@ void *thr_func(void *arg){
     logRegister(i, client_pid, client_tid, duration, -1, "IWANT");
 
     int fd = open((char *)arg, O_WRONLY);
-    if (fd==-1){ 
+    if (fd==-1){
+        logRegister(i, client_pid, client_tid, duration, -1, "FAILD");
         logRegister(i, client_pid, client_tid, duration, -1, "CLOSD");
         return NULL;
     }
@@ -58,23 +59,23 @@ void *thr_func(void *arg){
         printf("Private FIFO is open read %d\n", fd_private);
     }
     else{
-        printf("Can't open FIFO\n");
         logRegister(i, client_pid, client_tid, duration, -1, "FAILD");
+        printf("Can't open FIFO\n");
         if(unlink(private_fifo) < 0)
             printf("Error can't destroy private FIFO!\n");
         else
             printf("Private FIFO has been destroyed!\n");
-        exit(1);
+        return NULL;
     }
 
     if (read(fd_private, &message, MAX_LEN)>0) printf(message);    //Reads message from private FIFO
     sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);   
 
     if (pl == -1 && dur == -1){    //WC is closing
-        logRegister(id, pid, tid, dur, pl, "CLOSD");
+        logRegister(id, client_pid, client_tid, dur, pl, "CLOSD");
     }
     else{    //WC is open
-        logRegister(id, pid, tid, dur, pl, "IAMIN");
+        logRegister(id, client_pid, client_tid, dur, pl, "IAMIN");
     }
 
     close(fd_private);    //Closes private FIFO
@@ -103,8 +104,8 @@ int main(int argc, char *argv[], char *envp[]){
     while(getElapsedTime()*1e-3<args.nsecs){
         pthread_create(&threads[id], NULL, thr_func, args.fifoname);
         pthread_detach(threads[id]);
+        usleep(500*1000); //create WC requests every 500 ms
         id++;
-        sleep(1);
     }
 
     pthread_exit(0);
