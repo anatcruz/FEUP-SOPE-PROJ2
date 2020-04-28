@@ -9,12 +9,13 @@
 #include "args.h"
 #include "utils.h"
 
-int pl = 0;
 server_args args;
+int pl = 0;
+pthread_mutex_t server_mut=PTHREAD_MUTEX_INITIALIZER;
 
 void *thr_func(void *arg){
     //Recieving request
-    char private_fifo[256];
+    char private_fifo[MAX_LEN];
     int i, dur, pid, server_pid = getpid();
     long int tid, server_tid = pthread_self();
 
@@ -34,16 +35,19 @@ void *thr_func(void *arg){
     }
 
     //Replying to client
-    char client_reply[256];
+    char client_reply[MAX_LEN];
     if(getElapsedTime()*1e-3 + dur*1e-3 < args.nsecs){    //Request accepted
-        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, ++pl);
+        pthread_mutex_lock(&server_mut);
+        pl++;
+        pthread_mutex_unlock(&server_mut);
+        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, pl);
         logRegister(i, server_pid, server_tid, dur, pl, "ENTER");
     }
     else{    //WC is closing
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
         logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
     }
-    write(fd_private, &client_reply, 256);
+    write(fd_private, &client_reply, MAX_LEN);
 
     usleep(dur*1000);
     logRegister(1, server_pid, server_tid, dur, pl-1, "TIMUP");
@@ -82,17 +86,18 @@ int main(int argc, char *argv[], char *envp[]){
     }
     
     //Getting client requests
-    char msg[256];
-    pthread_t t;
+    char msg[MAX_LEN];
+    pthread_t threads[MAX_THREADS];
+    int id = 0;
 
     while(getElapsedTime()*1e-3 < args.nsecs){
         
-       if (read(fd, &msg, 256) > 0 && msg[0] == '['){
-            pthread_create(&t, NULL, thr_func, (void *) msg);
+       if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
             printf(msg);
-            pthread_join(t, NULL);
+            pthread_create(&threads[id], NULL, thr_func, (void *) msg);
+            pthread_detach(threads[id]);
+            id++;
        }
-     
     }
 
     close(fd);    //Closes FIFO
