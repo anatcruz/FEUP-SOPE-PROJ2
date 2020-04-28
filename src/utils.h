@@ -7,6 +7,9 @@
 #include <sys/time.h> 
 #include <time.h>
 
+#define MAX_LEN 256
+#define MAX_THREADS 100
+
 void getBeginTime();
 
 double getElapsedTime();
