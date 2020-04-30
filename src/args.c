@@ -7,9 +7,9 @@ int get_client_args(client_args *args, int argc, char *argv[]){
     }
 
     args->nsecs=-1;
-    for (int i=0; i<argc; i++){
+    for (int i=1; i<argc; i++){
         if (!strcmp(argv[i], "-t")){
-            if (args->nsecs!=-1) return -1;
+            if (args->nsecs!=-1 || i+1 == argc) return -1;
             if (atoi(argv[i+1])){
                 args->nsecs = atoi(argv[i+1]);
                 i++;
@@ -18,8 +18,11 @@ int get_client_args(client_args *args, int argc, char *argv[]){
                 return -1; //The next argument is not a number
             } 
         }
-        else if (argv[i][1] != '-'){
+        else if (argv[i][0] != '-'){
             strncpy(args->fifoname, argv[i], sizeof(args->fifoname));
+        }
+        else {
+            return -1;
         }
     }
 
@@ -39,9 +42,9 @@ int get_server_args(server_args *args, int argc, char *argv[]){
     args->nplaces=-1;
     args->nthreads=-1;
 
-    for (int i=0; i<argc; i++){
+    for (int i=1; i<argc; i++){
         if (!strcmp(argv[i], "-t")){
-            if (args->nsecs!=-1) return -1;
+            if (args->nsecs!=-1 || i+1 == argc) return -1;
             if (atoi(argv[i+1])){
                 args->nsecs = atoi(argv[i+1]);
                 i++;
@@ -51,7 +54,7 @@ int get_server_args(server_args *args, int argc, char *argv[]){
             } 
         }
         else if (!strcmp(argv[i], "-l")){
-            if (args->nplaces!=-1) return -1;
+            if (args->nplaces!=-1 || i+1 == argc) return -1;
             if (atoi(argv[i+1])){
                 args->nplaces = atoi(argv[i+1]);
                 i++;
@@ -61,7 +64,7 @@ int get_server_args(server_args *args, int argc, char *argv[]){
             } 
         }
         else if (!strcmp(argv[i], "-n")){
-            if (args->nthreads!=-1) return -1;
+            if (args->nthreads!=-1 || i+1 == argc) return -1;
             if (atoi(argv[i+1])){
                 args->nthreads = atoi(argv[i+1]);
                 i++;
@@ -70,7 +73,7 @@ int get_server_args(server_args *args, int argc, char *argv[]){
                 return -1; //The next argument is not a number
             } 
         }
-        else if (argv[i][1] != '-'){
+        else if (argv[i][0] != '-'){
             strncpy(args->fifoname, argv[i], sizeof(args->fifoname));
         }
     }
