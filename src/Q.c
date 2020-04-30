@@ -10,7 +10,7 @@
 #include "utils.h"
 
 server_args args;
-int pl = 0;
+int pl = 1;
 pthread_mutex_t server_mut=PTHREAD_MUTEX_INITIALIZER;
 
 void *thr_func(void *arg){
@@ -34,24 +34,29 @@ void *thr_func(void *arg){
         return NULL;
     }
 
+    int place = pl;
+    int entered = 0;
+
     //Replying to client
     char client_reply[MAX_LEN];
     if(getElapsedTime()*1e-3 + dur*1e-3 < args.nsecs){    //Request accepted
+        entered = 1;
         pthread_mutex_lock(&server_mut);
         pl++;
         pthread_mutex_unlock(&server_mut);
-        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, pl);
-        logRegister(i, server_pid, server_tid, dur, pl, "ENTER");
+        sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, place);
+        logRegister(i, server_pid, server_tid, dur, place, "ENTER");
     }
     else{    //WC is closing
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
         logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
-        return NULL;
     }
     write(fd_private, &client_reply, MAX_LEN);
 
-    usleep(dur*1000);
-    logRegister(1, server_pid, server_tid, dur, pl-1, "TIMUP");
+    if(entered){
+        usleep(dur*1000);
+        logRegister(1, server_pid, server_tid, dur, place, "TIMUP");
+    }
     close(fd_private);    //Closes private FIFO
     return NULL;
 }
@@ -59,7 +64,7 @@ void *thr_func(void *arg){
 
 int main(int argc, char *argv[], char *envp[]){
     if(get_server_args(&args, argc, argv)==-1){
-        perror("Error getting args!");
+        printf("Error getting args!\n");
         exit(1);
     }
 
