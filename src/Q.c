@@ -9,8 +9,7 @@
 #include "args.h"
 #include "utils.h"
 
-server_args args;
-int pl = 1;
+int pl = 1, closed = 0;
 pthread_mutex_t server_mut=PTHREAD_MUTEX_INITIALIZER;
 
 void *thr_func(void *arg){
@@ -23,11 +22,11 @@ void *thr_func(void *arg){
     logRegister(i, server_pid, server_tid, dur, -1, "RECVD");    //Request received
 
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
-    printf("Server pfifo %s\n", private_fifo);    
+    //printf("Server pfifo %s\n", private_fifo);    
 
     int fd_private;
     if((fd_private = open(private_fifo, O_WRONLY)) != -1){    //Opens private FIFO for writing
-        printf("Private FIFO is open write %d \n", fd_private);
+        //printf("Private FIFO is open write %d \n", fd_private);
     }
     else{
         logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
@@ -39,7 +38,7 @@ void *thr_func(void *arg){
 
     //Replying to client
     char client_reply[MAX_LEN];
-    if(getElapsedTime()*1e-3 + dur*1e-3 < args.nsecs){    //Request accepted
+    if(!closed){    //Request accepted
         entered = 1;
         pthread_mutex_lock(&server_mut);
         pl++;
@@ -47,7 +46,7 @@ void *thr_func(void *arg){
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, place);
         logRegister(i, server_pid, server_tid, dur, place, "ENTER");
     }
-    else{    //WC is closing
+    else{    //WC is closed
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
         logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
     }
@@ -63,6 +62,7 @@ void *thr_func(void *arg){
 
 
 int main(int argc, char *argv[], char *envp[]){
+    server_args args;
     if(get_server_args(&args, argc, argv)==-1){
         printf("Error getting args!\n");
         exit(1);
@@ -74,13 +74,13 @@ int main(int argc, char *argv[], char *envp[]){
         printf("Error, can't create FIFO!\n");
         exit(1);
     }
-    else{
+    /*else{
         printf("FIFO was created!\n");
-    }
+    }*/
 
     int fd;
     if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) != -1){   //Opens FIFO for reading
-        printf("FIFO is open read\n");
+        //printf("FIFO is open read\n");
     }
     else{
         printf("Can't open FIFO\n");
@@ -99,12 +99,13 @@ int main(int argc, char *argv[], char *envp[]){
     while(getElapsedTime()*1e-3 < args.nsecs){
         
        if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
-            printf(msg);
+            //printf(msg);
             pthread_create(&threads[id], NULL, thr_func, (void *) msg);
             pthread_detach(threads[id]);
             id++;
        }
     }
+    closed = 1;
 
     close(fd);    //Closes FIFO
     if(unlink(args.fifoname) < 0)    //Destroys FIFO
