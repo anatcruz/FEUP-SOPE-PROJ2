@@ -22,6 +22,20 @@ void *thr_func(void *arg){
     long int client_tid = pthread_self();
     int duration = rand() % 100 + 1; //random duration in WC in ms
 
+    //Creating Client private fifo
+    char private_fifo[MAX_LEN];
+    sprintf(private_fifo, "/tmp/%d.%ld", client_pid, client_tid);
+    //printf("Client pfifo %s\n", private_fifo);
+    if (mkfifo(private_fifo, 0660) != 0){   //Makes private FIFO
+        logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
+        printf("Error, can't create private FIFO!\n");
+        return NULL;
+    }
+    else{
+        //printf("Private FIFO was created!\n");
+    }
+
+    //Opening public fifo
     int fd = open(r.fifoname, O_WRONLY);
     if (fd==-1){
         closed = 1;
@@ -39,20 +53,8 @@ void *thr_func(void *arg){
 
 
     //Reading WC response
-    char private_fifo[MAX_LEN];
     int id, pid, pl, dur, fd_private;
     long tid;
-
-    sprintf(private_fifo, "/tmp/%d.%ld", client_pid, client_tid);
-    //printf("Client pfifo %s\n", private_fifo);
-    if (mkfifo(private_fifo, 0660) != 0){   //Makes private FIFO
-        logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
-        printf("Error, can't create private FIFO!\n");
-        return NULL;
-    }
-    else{
-        //printf("Private FIFO was created!\n");
-    }
 
     if((fd_private=open(private_fifo, O_RDONLY)) != -1){    //Opens private FIFO for reading
         //printf("Private FIFO is open read %d\n", fd_private);
@@ -97,13 +99,13 @@ int main(int argc, char *argv[], char *envp[]){
 
     getBeginTime();
 
-    pthread_t threads[MAX_THREADS];
     int id = 0;
 
-    while(getElapsedTime()*1e-3<args.nsecs && !closed){
+    while(getElapsedTime()<args.nsecs && !closed){
         struct request r = {args.fifoname, id};
-        pthread_create(&threads[id], NULL, thr_func, &r);
-        pthread_detach(threads[id]);
+        pthread_t thread;
+        pthread_create(&thread, NULL, thr_func, &r);
+        pthread_detach(thread);
         usleep(50*1000); //create WC requests every 500 ms
         id++;
     }
