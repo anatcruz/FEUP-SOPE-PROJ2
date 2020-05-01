@@ -93,16 +93,13 @@ int main(int argc, char *argv[], char *envp[]){
     
     //Getting client requests
     char msg[MAX_LEN];
-    pthread_t threads[MAX_THREADS];
-    int id = 0;
 
-    while(getElapsedTime()*1e-3 < args.nsecs){
+    while(getElapsedTime() < args.nsecs){
         
        if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
-            //printf(msg);
-            pthread_create(&threads[id], NULL, thr_func, (void *) msg);
-            pthread_detach(threads[id]);
-            id++;
+            pthread_t thread;
+            pthread_create(&thread, NULL, thr_func, (void *) msg);
+            pthread_detach(thread);
        }
     }
     closed = 1;
