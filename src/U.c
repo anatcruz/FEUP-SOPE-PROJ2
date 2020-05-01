@@ -20,9 +20,7 @@ void *thr_func(void *arg){
     struct request r = *(struct request*) arg;
     int client_pid = getpid();
     long int client_tid = pthread_self();
-    int duration = (rand() % (1000 - 200 + 1)) + 200; //random duration in WC in ms
-
-    //Incrementing request nr
+    int duration = rand() % 100 + 1; //random duration in WC in ms
 
     int fd = open(r.fifoname, O_WRONLY);
     if (fd==-1){
@@ -36,7 +34,7 @@ void *thr_func(void *arg){
     //Send request to WC
     char message[MAX_LEN];
     sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", r.i, client_pid, client_tid, duration, -1);
-    write(fd, &message, MAX_LEN);
+    if (write(fd, &message, MAX_LEN)<0) return NULL;
     close(fd);
 
 
@@ -46,18 +44,18 @@ void *thr_func(void *arg){
     long tid;
 
     sprintf(private_fifo, "/tmp/%d.%ld", client_pid, client_tid);
-    printf("Client pfifo %s\n", private_fifo);
+    //printf("Client pfifo %s\n", private_fifo);
     if (mkfifo(private_fifo, 0660) != 0){   //Makes private FIFO
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
         printf("Error, can't create private FIFO!\n");
         return NULL;
     }
     else{
-        printf("Private FIFO was created!\n");
+        //printf("Private FIFO was created!\n");
     }
 
     if((fd_private=open(private_fifo, O_RDONLY)) != -1){    //Opens private FIFO for reading
-        printf("Private FIFO is open read %d\n", fd_private);
+        //printf("Private FIFO is open read %d\n", fd_private);
     }
     else{
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
@@ -69,7 +67,7 @@ void *thr_func(void *arg){
         return NULL;
     }
 
-    if (read(fd_private, &message, MAX_LEN)>0) printf(message);    //Reads message from private FIFO
+    if (read(fd_private, &message, MAX_LEN)>0) //printf(message);    //Reads message from private FIFO
     sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);   
 
     if (pl == -1 && dur == -1){    //WC is closing
@@ -106,7 +104,7 @@ int main(int argc, char *argv[], char *envp[]){
         struct request r = {args.fifoname, id};
         pthread_create(&threads[id], NULL, thr_func, &r);
         pthread_detach(threads[id]);
-        usleep(500*1000); //create WC requests every 500 ms
+        usleep(50*1000); //create WC requests every 500 ms
         id++;
     }
 
