@@ -9,7 +9,11 @@ void getBeginTime(){
 double getElapsedTime(){
     struct timespec current;
     clock_gettime(CLOCK_MONOTONIC, &current);
-    return ((current.tv_sec - start.tv_sec)*1000 + (current.tv_nsec - start.tv_nsec)/1e6);
+    
+    double elapsed_time = (current.tv_sec - start.tv_sec) * 1e9;
+    elapsed_time = (elapsed_time + (current.tv_sec - start.tv_sec)) * 1e-9;
+
+    return elapsed_time;
 }
     
 void logRegister(int i, int pid, long tid, int dur, int pl, char *oper) {
