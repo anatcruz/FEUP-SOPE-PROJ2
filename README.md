@@ -14,6 +14,7 @@ Flags | Descrição
 fifoname | nome do canal público (FIFO) para comunicação com o servidor
 -l nplaces | lotação do Quarto de Banho
 -n nthreads | número (máximo) de threads a atender pedidos
+
 Nota: não era necessário implementar as opções nplaces e nthreads na primeira parte (assume-se que são ilimitadas)
 
 ### Features
