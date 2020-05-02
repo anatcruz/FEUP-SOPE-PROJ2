@@ -12,11 +12,11 @@ all: U Q
 
 U: $(OBJ)
 	@$(CC) $(CFLAGS) -o $@1 $@.c $(OBJ)
-	@echo $@
+	@echo $@1
 
 Q: $(OBJ)
 	@$(CC) $(CFLAGS) -o $@1 $@.c $(OBJ)
-	@echo $@
+	@echo $@1
 
 clean:
 	@rm *.o $(TARGETS)

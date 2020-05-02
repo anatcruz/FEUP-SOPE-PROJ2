@@ -25,14 +25,10 @@ void *thr_func(void *arg){
     //Creating Client private fifo
     char private_fifo[MAX_LEN];
     sprintf(private_fifo, "/tmp/%d.%ld", client_pid, client_tid);
-    //printf("Client pfifo %s\n", private_fifo);
     if (mkfifo(private_fifo, 0660) != 0){   //Makes private FIFO
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
-        printf("Error, can't create private FIFO!\n");
+        perror("Can't make private fifo!");
         return NULL;
-    }
-    else{
-        //printf("Private FIFO was created!\n");
     }
 
     //Opening public fifo
@@ -40,15 +36,19 @@ void *thr_func(void *arg){
     if (fd==-1){
         closed = 1;
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
+        perror("Can't open public fifo WRONLY!");
         return NULL;
     }
-    printf("FIFO is open write\n");
     logRegister(r.i, client_pid, client_tid, duration, -1, "IWANT");
 
     //Send request to WC
     char message[MAX_LEN];
     sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", r.i, client_pid, client_tid, duration, -1);
-    if (write(fd, &message, MAX_LEN)<0) return NULL;
+    if (write(fd, &message, MAX_LEN)<0){
+        logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
+        perror("Can't write to public fifo!");
+        return NULL;
+    }
     close(fd);
 
 
@@ -56,23 +56,25 @@ void *thr_func(void *arg){
     int id, pid, pl, dur, fd_private;
     long tid;
 
-    if((fd_private=open(private_fifo, O_RDONLY)) != -1){    //Opens private FIFO for reading
-        //printf("Private FIFO is open read %d\n", fd_private);
-    }
-    else{
+    //Opens private FIFO for reading and checks for error
+    if((fd_private=open(private_fifo, O_RDONLY)) == -1){
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
-        printf("Can't open FIFO\n");
+        perror("Can't open private fifo RDONLY!");
         if(unlink(private_fifo) < 0)
-            printf("Error can't destroy private FIFO!\n");
-        else
-            printf("Private FIFO has been destroyed!\n");
+            perror("Can't destroy private fifo!");
         return NULL;
     }
 
-    if (read(fd_private, &message, MAX_LEN)>0) //printf(message);    //Reads message from private FIFO
+    //Reads message from private FIFO
+    if (read(fd_private, &message, MAX_LEN)<0){
+        logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
+        perror("Can't read from private fifo!");
+        return NULL;
+    }
     sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);   
 
     if (pl == -1 && dur == -1){    //WC is closing
+        closed = 1;
         logRegister(r.i, client_pid, client_tid, dur, pl, "CLOSD");
     }
     else{    //WC is open
@@ -81,9 +83,7 @@ void *thr_func(void *arg){
 
     close(fd_private);    //Closes private FIFO
     if(unlink(private_fifo) < 0)    //Destroys private FIFO
-       printf("Error can't destroy Private FIFO!\n");
-    else
-        printf("Private FIFO has been destroyed!\n");
+       perror("Can't destroy Private FIFO!");
 
     return NULL;
 }
@@ -93,7 +93,7 @@ int main(int argc, char *argv[], char *envp[]){
     client_args args;
 
     if(get_client_args(&args, argc, argv)==-1){
-        printf("Error getting args!\n");
+        perror("Error getting args!");
         exit(1);
     }
 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[], char *envp[]){
         pthread_t thread;
         pthread_create(&thread, NULL, thr_func, &r);
         pthread_detach(thread);
-        usleep(50*1000); //create WC requests every 500 ms
+        usleep(50*1000); //create WC requests every 50 ms
         id++;
     }
 

@@ -22,14 +22,12 @@ void *thr_func(void *arg){
     logRegister(i, server_pid, server_tid, dur, -1, "RECVD");    //Request received
 
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
-    //printf("Server pfifo %s\n", private_fifo);    
 
+    //Opens private FIFO for writing and cheking error
     int fd_private;
-    if((fd_private = open(private_fifo, O_WRONLY)) != -1){    //Opens private FIFO for writing
-        //printf("Private FIFO is open write %d \n", fd_private);
-    }
-    else{
+    if((fd_private = open(private_fifo, O_WRONLY)) == -1){
         logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
+        perror("Can't open private fifo WRONLY!");
         return NULL;
     }
 
@@ -50,11 +48,16 @@ void *thr_func(void *arg){
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
         logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
     }
-    write(fd_private, &client_reply, MAX_LEN);
+
+    if(write(fd_private, &client_reply, MAX_LEN)<0) {
+        logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
+        perror("Can't write to private fifo!");
+        return NULL;
+    }
 
     if(entered){
         usleep(dur*1000);
-        logRegister(1, server_pid, server_tid, dur, place, "TIMUP");
+        logRegister(i, server_pid, server_tid, dur, place, "TIMUP");
     }
     close(fd_private);    //Closes private FIFO
     return NULL;
@@ -64,30 +67,22 @@ void *thr_func(void *arg){
 int main(int argc, char *argv[], char *envp[]){
     server_args args;
     if(get_server_args(&args, argc, argv)==-1){
-        printf("Error getting args!\n");
+        perror("Error getting args!");
         exit(1);
     }
 
     getBeginTime();
 
     if (mkfifo(args.fifoname, 0660) != 0){    //Makes FIFO
-        printf("Error, can't create FIFO!\n");
+        perror("Error, can't create publc fifo!");
         exit(1);
     }
-    /*else{
-        printf("FIFO was created!\n");
-    }*/
 
     int fd;
-    if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) != -1){   //Opens FIFO for reading
-        //printf("FIFO is open read\n");
-    }
-    else{
-        printf("Can't open FIFO\n");
+    if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) == -1){   //Opens FIFO for reading
+        perror("Can't open public fifo RDONLY");
         if(unlink(args.fifoname) < 0)
-            printf("Error can't destroy FIFO!\n");
-        else
-            printf("FIFO has been destroyed!\n");
+            perror("Error can't destroy publi fifo!");
         exit(1);
     }
     
@@ -95,20 +90,24 @@ int main(int argc, char *argv[], char *envp[]){
     char msg[MAX_LEN];
 
     while(getElapsedTime() < args.nsecs){
-        
        if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
             pthread_t thread;
             pthread_create(&thread, NULL, thr_func, (void *) msg);
             pthread_detach(thread);
        }
     }
+
     closed = 1;
+    //Checking if a client tried to access WC but it closed
+    if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
+        pthread_t thread;
+        pthread_create(&thread, NULL, thr_func, (void *) msg);
+        pthread_detach(thread);
+    }
 
     close(fd);    //Closes FIFO
     if(unlink(args.fifoname) < 0)    //Destroys FIFO
-       printf("Error can't destroy FIFO!\n");
-    else
-        printf("FIFO has been destroyed!\n");
+       perror("Error can't destroy public fifo!");
 
     pthread_exit(0);
 }
