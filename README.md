@@ -19,7 +19,7 @@ Nota: não era necessário implementar as opções nplaces e nthreads na primeir
 
 ### Features
 - Todas as funcionalidades estão implementadas de acordo com o enunciado e a nossa interpretação
-- Interpretámos a parte do fecho da casa de banho da seguinte maneira: após o ciclo while que processa os pedidos dos clientes e antes do fecho do FIFO público, colocamos uma flag closed a true  e verificamos se ainda há algum pedido em buffer para fazer a leitura, pedido este que irá ser respondido com 2LATE da parte do server. No entanto, esta situação é rara devido ao intervalo de criação dos pedidos pela parte dos clientes e à velocidade de execução dos programas.
+- Interpretámos a parte do fecho da casa de banho da seguinte maneira: após o ciclo while que processa os pedidos dos clientes e antes do fecho do FIFO público, colocamos uma flag closed a true  e verificamos se ainda há algum pedido em buffer para fazer a leitura, pedido este que irá ser respondido com 2LATE da parte do server. No entanto, esta situação é rara devido ao intervalo de criação dos pedidos pela parte dos clientes e à velocidade de execução dos programas, por isso, no nosso programa, quando o programa dos clientes tem mais tempo de execução do que o do servidor, o servidor acaba primeiro fechando o fifo público e o dos clientes quando lançar um novo pedido vai dar FAILD porque já não consegue comunicar com o servidor.
 
 
 ### Notas adicionais
