@@ -37,9 +37,11 @@ void *thr_func(void *arg){
         closed = 1;
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
         perror("Can't open public fifo WRONLY!");
+        if(unlink(private_fifo) < 0)
+            perror("Can't destroy private fifo!");
+        closed=1;
         return NULL;
     }
-    logRegister(r.i, client_pid, client_tid, duration, -1, "IWANT");
 
     //Send request to WC
     char message[MAX_LEN];
@@ -47,9 +49,14 @@ void *thr_func(void *arg){
     if (write(fd, &message, MAX_LEN)<0){
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
         perror("Can't write to public fifo!");
+        if(unlink(private_fifo) < 0)
+            perror("Can't destroy private fifo!");
+        closed=1;
         return NULL;
     }
     close(fd);
+
+    logRegister(r.i, client_pid, client_tid, duration, -1, "IWANT");
 
 
     //Reading WC response
@@ -74,7 +81,7 @@ void *thr_func(void *arg){
     sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);   
 
     if (pl == -1 && dur == -1){    //WC is closing
-        closed = 1;
+        //closed = 1;
         logRegister(r.i, client_pid, client_tid, dur, pl, "CLOSD");
     }
     else{    //WC is open
