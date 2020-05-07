@@ -98,16 +98,17 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     closed = 1;
+    if(unlink(args.fifoname) < 0)    //Destroys FIFO
+       perror("Error can't destroy public fifo!");
+
     //Checking if a client tried to access WC but it closed
-    if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
+    while (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
         pthread_t thread;
         pthread_create(&thread, NULL, thr_func, (void *) msg);
         pthread_detach(thread);
     }
 
     close(fd);    //Closes FIFO
-    if(unlink(args.fifoname) < 0)    //Destroys FIFO
-       perror("Error can't destroy public fifo!");
 
     pthread_exit(0);
 }
