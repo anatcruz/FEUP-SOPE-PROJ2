@@ -17,5 +17,5 @@ typedef struct {
     char fifoname[256];
 }server_args;
 
-int get_client_args(client_args *args, int argc, char *argv[]);
-int get_server_args(server_args *args, int argc, char *argv[]);
+client_args get_client_args(int argc, char *argv[]);
+server_args get_server_args(int argc, char *argv[]);

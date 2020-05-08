@@ -97,12 +97,7 @@ void *thr_func(void *arg){
 
 
 int main(int argc, char *argv[], char *envp[]){
-    client_args args;
-
-    if(get_client_args(&args, argc, argv)==-1){
-        perror("Error getting args!");
-        exit(1);
-    }
+    client_args args = get_client_args(argc, argv);
 
     getBeginTime();
 
