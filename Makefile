@@ -1,22 +1,23 @@
 CC = gcc
 CFLAGS = -Wall -pthread
-DEPS = src/utils.h src/args.h
 OBJ = src/utils.o src/args.o
+UOBJ = src/U.o
+QOBJ = src/Q.o
 TARGETS = U2 Q2
 
 all: U2 Q2
 
-%.o: %.c $(DEPS)
+%.o: %.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
 	@echo $@
 
-U2: $(OBJ)
-	@$(CC) $(CFLAGS) -o $@ src/U.c $(OBJ)
+U2: $(UOBJ) $(OBJ)
+	@$(CC) $(CFLAGS) $(OBJ) $(UOBJ) -o $@
 	@echo $@
 
-Q2: $(OBJ)
-	@$(CC) $(CFLAGS) -o $@ src/Q.c $(OBJ)
+Q2: $(QOBJ) $(OBJ)
+	@$(CC) $(CFLAGS) $(OBJ) $(QOBJ) -o $@
 	@echo $@
 
 clean:
-	@rm $(OBJ) $(TARGETS)
+	@rm $(OBJ) $(UOBJ) $(QOBJ) $(TARGETS)
