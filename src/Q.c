@@ -6,12 +6,16 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include "args.h"
 #include "utils.h"
 #include "queue.h"
 
-int pl = 1, closed = 0;
+int pl = 1, closed = 0, limited_places = 0, limited_threads = 0;
 pthread_mutex_t server_mut=PTHREAD_MUTEX_INITIALIZER;
+sem_t sem_places;
+sem_t sem_threads;
+queue q;
 
 void *thr_func(void *arg){
     //Recieving request
@@ -24,11 +28,16 @@ void *thr_func(void *arg){
 
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
 
-    //Opens private FIFO for writing and cheking error
+    //Opens private FIFO for writing and checking error
     int fd_private;
     if((fd_private = open(private_fifo, O_WRONLY)) == -1){
         logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
         perror("Can't open private fifo WRONLY!");
+
+        if (limited_threads) {
+            sem_post(&sem_threads);
+        }
+
         return NULL;
     }
 
@@ -39,26 +48,61 @@ void *thr_func(void *arg){
     char client_reply[MAX_LEN];
     if(!closed){    //Request accepted
         entered = 1;
-        pthread_mutex_lock(&server_mut);
-        pl++;
-        pthread_mutex_unlock(&server_mut);
+
+        if (limited_places){
+            sem_wait(&sem_places);
+            pthread_mutex_lock(&server_mut);
+            place = usePlace(&q);
+            pthread_mutex_unlock(&server_mut);
+        }
+        else{
+            pthread_mutex_lock(&server_mut);
+            pl++;
+            pthread_mutex_unlock(&server_mut);
+        }
+
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, dur, place);
         logRegister(i, server_pid, server_tid, dur, place, "ENTER");
     }
     else{    //WC is closed
         sprintf(client_reply, "[ %d, %d, %ld, %d, %d ]\n",i, server_pid, server_tid, -1, -1);
         logRegister(i, server_pid, server_tid, dur, -1, "2LATE");
+        
+        if (limited_threads){
+            sem_post(&sem_threads);
+        }
     }
 
     if(write(fd_private, &client_reply, MAX_LEN)<0) {
         logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
         perror("Can't write to private fifo!");
+
+        if (limited_places){
+            pthread_mutex_lock(&server_mut);
+            makeAvailable(&q, place);
+            pthread_mutex_unlock(&server_mut);
+            sem_post(&sem_places); 
+        }
+        if (limited_threads){
+            sem_post(&sem_threads);
+        }
+
         return NULL;
     }
 
     if(entered){
         usleep(dur*1000);
         logRegister(i, server_pid, server_tid, dur, place, "TIMUP");
+        
+        if (limited_places) { 
+            pthread_mutex_lock(&server_mut);
+            makeAvailable(&q, place);
+            pthread_mutex_unlock(&server_mut);
+            sem_post(&sem_places); 
+        }
+        if (limited_threads) { 
+            sem_post(&sem_threads); 
+        }
     }
     close(fd_private);    //Closes private FIFO
     return NULL;
@@ -67,6 +111,9 @@ void *thr_func(void *arg){
 
 int main(int argc, char *argv[], char *envp[]){
     server_args args = get_server_args(argc, argv);
+
+    if (args.nplaces > 0) limited_places = 1;
+    if (args.nthreads > 0) limited_threads = 1;
 
     getBeginTime();
 
@@ -79,15 +126,26 @@ int main(int argc, char *argv[], char *envp[]){
     if((fd=open(args.fifoname, O_RDONLY | O_NONBLOCK)) == -1){   //Opens FIFO for reading
         perror("Can't open public fifo RDONLY");
         if(unlink(args.fifoname) < 0)
-            perror("Error can't destroy publi fifo!");
+            perror("Error can't destroy public fifo!");
         exit(1);
     }
     
+    if(limited_places){
+        sem_init(&sem_places, 0,  args.nplaces);
+        q = createPlaceQueue(args.nplaces);
+        fillPlaceQueue(&q);
+    }
+    if(limited_threads){
+        sem_init(&sem_threads, 0, args.nthreads);
+    }
+
     //Getting client requests
     char msg[MAX_LEN];
-
     while(getElapsedTime() < args.nsecs){
        if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
+            if (limited_threads){ 
+                sem_wait(&sem_threads); 
+            }
             pthread_t thread;
             pthread_create(&thread, NULL, thr_func, (void *) msg);
             pthread_detach(thread);
@@ -100,6 +158,9 @@ int main(int argc, char *argv[], char *envp[]){
 
     //Checking if a client tried to access WC but it closed
     while (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
+        if (limited_threads){ 
+            sem_wait(&sem_threads); 
+        }
         pthread_t thread;
         pthread_create(&thread, NULL, thr_func, (void *) msg);
         pthread_detach(thread);
