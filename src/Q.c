@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include "args.h"
 #include "utils.h"
+#include "queue.h"
 
 int pl = 1, closed = 0;
 pthread_mutex_t server_mut=PTHREAD_MUTEX_INITIALIZER;

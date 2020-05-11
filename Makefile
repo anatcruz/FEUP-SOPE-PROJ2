@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -pthread
 OBJ = src/utils.o src/args.o
 UOBJ = src/U.o
-QOBJ = src/Q.o
+QOBJ = src/Q.o src/queue.o
 TARGETS = U2 Q2
 
 all: U2 Q2
