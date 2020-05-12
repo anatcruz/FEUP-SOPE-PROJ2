@@ -1,6 +1,6 @@
 #include "queue.h"
 
-queue createPlaceQueue(unsigned capacity) {
+queue createQueue(unsigned capacity) {
     queue pq;
     pq.capacity = capacity;
     pq.size = 0;
@@ -37,7 +37,7 @@ unsigned usePlace(queue* q) {
     return item;
 }
 
-void fillPlaceQueue(queue* q) {
+void fillQueue(queue* q) {
     for (unsigned i = 1; i <= q->capacity; i++) {
         makeAvailable(q, i);
     }

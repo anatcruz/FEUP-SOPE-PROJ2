@@ -132,8 +132,8 @@ int main(int argc, char *argv[], char *envp[]){
     
     if(limited_places){
         sem_init(&sem_places, 0,  args.nplaces);
-        q = createPlaceQueue(args.nplaces);
-        fillPlaceQueue(&q);
+        q = createQueue(args.nplaces);
+        fillQueue(&q);
     }
     if(limited_threads){
         sem_init(&sem_threads, 0, args.nthreads);

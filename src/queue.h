@@ -9,9 +9,9 @@ typedef struct Queue
     int* array;
 } queue;
 
-queue createPlaceQueue(unsigned capacity);
+queue createQueue(unsigned capacity);
 int isFull(queue* q);
 int isEmpty(queue* q);
 void makeAvailable(queue* q, unsigned item);
 unsigned usePlace(queue* q);
-void fillPlaceQueue(queue* q);
+void fillQueue(queue* q);
