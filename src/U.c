@@ -14,6 +14,7 @@ struct request {
     int i;
 };
 
+pthread_mutex_t client_mut=PTHREAD_MUTEX_INITIALIZER;
 int closed = 0;
 
 void *thr_func(void *arg){
@@ -34,12 +35,13 @@ void *thr_func(void *arg){
     //Opening public fifo
     int fd = open(r.fifoname, O_WRONLY);
     if (fd==-1){
-        closed = 1;
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
         perror("Can't open public fifo WRONLY!");
         if(unlink(private_fifo) < 0)
             perror("Can't destroy private fifo!");
+        pthread_mutex_lock(&client_mut);
         closed=1;
+        pthread_mutex_unlock(&client_mut);
         return NULL;
     }
 
@@ -51,7 +53,9 @@ void *thr_func(void *arg){
         perror("Can't write to public fifo!");
         if(unlink(private_fifo) < 0)
             perror("Can't destroy private fifo!");
+        pthread_mutex_lock(&client_mut);
         closed=1;
+        pthread_mutex_unlock(&client_mut);
         return NULL;
     }
     close(fd);
