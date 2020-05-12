@@ -73,7 +73,7 @@ void *thr_func(void *arg){
         }
     }
 
-    if(write(fd_private, &client_reply, MAX_LEN)<0) {
+    if(write(fd_private, client_reply, MAX_LEN)<0) {
         logRegister(i, server_pid, server_tid, dur, -1, "GAVUP");
         perror("Can't write to private fifo!");
 
@@ -142,12 +142,14 @@ int main(int argc, char *argv[], char *envp[]){
     //Getting client requests
     char msg[MAX_LEN];
     while(getElapsedTime() < args.nsecs){
-       if (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
+       if (read(fd, msg, MAX_LEN) > 0 && msg[0] == '['){
+           char* tmp;
+           tmp = strdup(msg);
             if (limited_threads){ 
                 sem_wait(&sem_threads); 
             }
             pthread_t thread;
-            pthread_create(&thread, NULL, thr_func, (void *) msg);
+            pthread_create(&thread, NULL, thr_func, (void *) tmp);
             pthread_detach(thread);
        }
     }
@@ -157,12 +159,14 @@ int main(int argc, char *argv[], char *envp[]){
        perror("Error can't destroy public fifo!");
 
     //Checking if a client tried to access WC but it closed
-    while (read(fd, &msg, MAX_LEN) > 0 && msg[0] == '['){
+    while (read(fd, msg, MAX_LEN) > 0 && msg[0] == '['){
+        char* tmp;
+        tmp = strdup(msg);
         if (limited_threads){ 
             sem_wait(&sem_threads); 
         }
         pthread_t thread;
-        pthread_create(&thread, NULL, thr_func, (void *) msg);
+        pthread_create(&thread, NULL, thr_func, (void *) tmp);
         pthread_detach(thread);
     }
 

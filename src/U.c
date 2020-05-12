@@ -48,7 +48,7 @@ void *thr_func(void *arg){
     //Send request to WC
     char message[MAX_LEN];
     sprintf(message, "[ %d, %d, %ld, %d, %d ]\n", r.i, client_pid, client_tid, duration, -1);
-    if (write(fd, &message, MAX_LEN)<0){
+    if (write(fd, message, MAX_LEN)<0){
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
         perror("Can't write to public fifo!");
         if(unlink(private_fifo) < 0)
@@ -77,15 +77,19 @@ void *thr_func(void *arg){
     }
 
     //Reads message from private FIFO
-    if (read(fd_private, &message, MAX_LEN)<0){
+    if (read(fd_private, message, MAX_LEN)<0){
         logRegister(r.i, client_pid, client_tid, duration, -1, "FAILD");
         perror("Can't read from private fifo!");
+        close(fd_private);
+        if(unlink(private_fifo) < 0)
+            perror("Can't destroy private fifo!");
         return NULL;
     }
+
     sscanf(message, "[ %d, %d, %ld, %d, %d ]\n", &id, &pid, &tid, &dur, &pl);   
 
     if (pl == -1 && dur == -1){    //WC is closing
-        //closed = 1;
+        closed = 1;
         logRegister(r.i, client_pid, client_tid, dur, pl, "CLOSD");
     }
     else{    //WC is open
@@ -112,7 +116,7 @@ int main(int argc, char *argv[], char *envp[]){
         pthread_t thread;
         pthread_create(&thread, NULL, thr_func, &r);
         pthread_detach(thread);
-        usleep(50*1000); //create WC requests every 50 ms
+        usleep(10*1000); //create WC requests every 50 ms
         id++;
     }
 
