@@ -1,13 +1,14 @@
 #include "queue.h"
 
 queue createQueue(unsigned capacity) {
-    queue pq;
-    pq.capacity = capacity;
-    pq.size = 0;
-    pq.front = 0;
-    pq.rear = capacity - 1;
-    pq.array = (int*) malloc(capacity * sizeof(int));
-    return pq;
+    queue q;
+    q.capacity = capacity;
+    q.size = 0;
+    q.front = 0;
+    q.rear = capacity - 1;
+    q.array = (int*) malloc(capacity * sizeof(int));
+    fillQueue(&q);
+    return q;
 }
 
 int isFull(queue* q) {
