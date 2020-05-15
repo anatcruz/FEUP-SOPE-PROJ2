@@ -1,5 +1,5 @@
 # Trabalho Prático nº 2 de Sistemas Operativos
-## Acesso informático aos quartos de banho - Entrega 1
+## Acesso informático aos quartos de banho - Entrega 2
 ### Modo de utilização:
 ```console
 Un <-t nsecs> fifoname
@@ -15,7 +15,6 @@ fifoname | nome do canal público (FIFO) para comunicação com o servidor
 -l nplaces | lotação do Quarto de Banho
 -n nthreads | número (máximo) de threads a atender pedidos
 
-Nota: não era necessário implementar as opções nplaces e nthreads na primeira parte (assume-se que são ilimitadas).
 
 ### Features
 - Todas as funcionalidades estão implementadas de acordo com o enunciado e a nossa interpretação.
