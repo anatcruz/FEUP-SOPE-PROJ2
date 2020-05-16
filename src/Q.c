@@ -24,6 +24,8 @@ void *thr_func(void *arg){
     long int tid, server_tid = pthread_self();
 
     sscanf((char *) arg,"[ %d, %d, %ld, %d, -1 ]\n",&i,&pid,&tid,&dur);
+    free(arg);
+
     logRegister(i, server_pid, server_tid, dur, -1, "RECVD");    //Request received
 
     sprintf(private_fifo, "/tmp/%d.%ld", pid, tid);
